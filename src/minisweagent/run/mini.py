@@ -99,7 +99,15 @@ def main(
     model = get_model(config=config.get("model", {}))
     env = get_environment(config.get("environment", {}), default_type="local")
     agent = get_agent(model, env, config.get("agent", {}), default_type="interactive")
-    agent.run(run_task)
+    try:
+        agent.run(run_task)
+    finally:
+        summary = agent.get_summary()
+        console.print(
+            f"运行摘要：步数={summary['steps']}，"
+            f"命令失败数={summary['failed_commands']}，"
+            f"结束原因={summary['exit_reason']}"
+        )
     if (output_path := config.get("agent", {}).get("output_path")):
         console.print(f"Saved trajectory to [bold green]'{output_path}'[/bold green]")
     return agent

@@ -162,6 +162,7 @@ class DefaultAgent:
         last_extra = last_message.get("extra", {})
         agent_data = {
             "info": {
+                "summary":self.get_summary(),
                 "model_stats": {
                     "instance_cost": self.cost,
                     "api_calls": self.n_calls,
@@ -178,6 +179,25 @@ class DefaultAgent:
             "trajectory_format": "mini-swe-agent-1.1",
         }
         return recursive_merge(agent_data, self.model.serialize(), self.env.serialize(), *extra_dicts)
+
+    def get_summary(self) ->dict:
+        failed_commands = 0
+        for message in self.messages:
+            extra =message.get("extra",{})
+            returncode = extra.get("returncode")
+            if extra.get("exception_info")=="action was not executed":
+                continue
+            if returncode is not None and returncode !=0:
+                failed_commands +=1
+
+        last_message = self.messages[-1] if self.messages else {}
+
+        return {
+            "steps": self.n_calls,
+            "failed_commands": failed_commands,
+            "exit_reason":last_message.get("extra",{}).get("exit_status",""),
+        }
+
 
     def save(self, path: Path | None, *extra_dicts) -> dict:
         """Save the trajectory of the agent to a file if path is given. Returns full serialized data.
